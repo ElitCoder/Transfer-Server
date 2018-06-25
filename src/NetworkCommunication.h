@@ -10,7 +10,7 @@
 #include <unordered_map>
 
 enum NetworkConstants {
-    BUFFER_SIZE = 4096,
+    BUFFER_SIZE = 65536,
     MAX_WAITING_PACKETS_PER_CLIENT = 10
 };
 
