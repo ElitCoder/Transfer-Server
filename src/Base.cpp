@@ -3,12 +3,12 @@
 #include "NetworkCommunication.h"
 #include "Handle.h"
 
-Config Base::settings_;
+Config Base::config_;
 NetworkCommunication Base::network_;
 Handle Base::handle_;
 
-Config& Base::settings() {
-	return settings_;
+Config& Base::config() {
+	return config_;
 }
 
 NetworkCommunication& Base::network() {

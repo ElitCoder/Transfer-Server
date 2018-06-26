@@ -12,11 +12,12 @@ static void printStart() {
 }
 
 static void process() {
-	auto port = Base::settings().get<int>("port", 12000);
-	auto send_threads = Base::settings().get<int>("sending_threads", 1);
-	auto recv_threads = Base::settings().get<int>("receiving_threads", 1);
+	auto port = Base::config().get<int>("port", 12000);
+	auto send_threads = Base::config().get<int>("sending_threads", 1);
+	auto recv_threads = Base::config().get<int>("receiving_threads", 1);
 	
 	Base::network().start(port, send_threads, recv_threads);
+	Base::network().registerDisconnectFunction(disconnectFunction);
 	
 	while (true) {
 		auto packet = Base::network().waitForProcessingPackets();
@@ -28,7 +29,7 @@ static void process() {
 int main() {
 	printStart();
 	
-	Base::settings().parse("config");
+	Base::config().parse("config");
 	process();
 	
 	return 0;

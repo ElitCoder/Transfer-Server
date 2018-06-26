@@ -8,12 +8,12 @@ class Handle;
 
 class Base {
 public:
-	static Config& settings();
+	static Config& config();
 	static NetworkCommunication& network();
 	static Handle& handle();
 	
 private:
-	static Config settings_;
+	static Config config_;
 	static NetworkCommunication network_;
 	static Handle handle_;
 };

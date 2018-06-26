@@ -8,6 +8,7 @@
 #include <vector>
 #include <list>
 #include <unordered_map>
+#include <functional>
 
 enum NetworkConstants {
     BUFFER_SIZE = 65536,
@@ -38,7 +39,7 @@ public:
     NetworkCommunication();
     ~NetworkCommunication();
     
-    void start(unsigned short port, int num_sending_threads, int num_receiving_threads);
+    void start(unsigned short port, int num_sending_threads, int num_receiving_threads, bool stats = false, int delay = 3000);
     
     void setFileDescriptorsAccept(fd_set &readSet, fd_set &errorSet);
     void setFileDescriptorsReceive(fd_set &readSet, fd_set &errorSet, int thread_id);
@@ -61,6 +62,8 @@ public:
     void sendToAllExcept(const Packet &packet, const std::vector<int> &except);
     
     std::vector<std::string> getStats();
+    
+    void registerDisconnectFunction(std::function<void(int, size_t)> disconnect_function);
     
 private:
     void assemblePacket(const unsigned char *buffer, const unsigned int received, Connection &connection);
@@ -87,6 +90,8 @@ private:
     
     int num_sending_threads_    = 1;
     int num_receiving_threads_  = 1;
+    
+    std::function<void(int, size_t)> disconnect_function_;
 };
 
 #endif

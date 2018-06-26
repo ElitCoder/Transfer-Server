@@ -1,8 +1,6 @@
 #include "NetworkCommunication.h"
-#include "Base.h"
 #include "Log.h"
 #include "Connection.h"
-#include "Config.h"
 #include "Packet.h"
 #include "PartialPacket.h"
 
@@ -74,11 +72,7 @@ vector<string> NetworkCommunication::getStats() {
     return lines;
 }
 
-static void statsThread(NetworkCommunication& network) {
-    if (!Base::settings().get<bool>("stats", false))
-        return;
-        
-    auto delay = Base::settings().get<int>("stats_delay", 3000);
+static void statsThread(NetworkCommunication& network, int delay) {
     auto next_sync = chrono::system_clock::now() + chrono::milliseconds(delay);
     
     while (true) {
@@ -267,7 +261,7 @@ NetworkCommunication::~NetworkCommunication() {
 }
 
 // Same as old constructor
-void NetworkCommunication::start(unsigned short port, int num_sending_threads, int num_receiving_threads) {
+void NetworkCommunication::start(unsigned short port, int num_sending_threads, int num_receiving_threads, bool stats, int delay) {
     num_sending_threads_ = num_sending_threads;
     num_receiving_threads_ = num_receiving_threads;
     
@@ -288,7 +282,9 @@ void NetworkCommunication::start(unsigned short port, int num_sending_threads, i
         mConnectionsMutex.push_back(make_shared<mutex>());
     
     mAcceptThread = thread(acceptThread, ref(*this));
-    mStatsThread = thread(statsThread, ref(*this));
+    
+    if (stats)
+        mStatsThread = thread(statsThread, ref(*this), delay);
     
     mSendThread.resize(num_sending_threads);
     
@@ -348,6 +344,7 @@ bool NetworkCommunication::runSelectReceive(fd_set &readSet, fd_set &errorSet, u
     
     for(auto& connection_peer : mConnections.at(thread_id)) {
         bool removeConnection = false;
+        auto& id = connection_peer.first;
         auto& connection = connection_peer.second;
         
         if (connection.packetsWaiting() > NetworkConstants::MAX_WAITING_PACKETS_PER_CLIENT)
@@ -388,8 +385,11 @@ bool NetworkCommunication::runSelectReceive(fd_set &readSet, fd_set &errorSet, u
         }
         
         if(removeConnection) {
-            // Remove from game
-            //Base::game().disconnected(connection);
+            // Remove
+            if (disconnect_function_)
+                disconnect_function_(connection.getSocket(), id);
+            else
+                Log(WARNING) << "No valid disconnect function was registered\n";
             
             if (close(connection.getSocket()) < 0)
                 Log(ERROR) << "close() got errno = " << errno << endl;
@@ -552,6 +552,10 @@ tuple<int, size_t, Packet> NetworkCommunication::waitForProcessingPackets() {
     }
     
     return packet;
+}
+
+void NetworkCommunication::registerDisconnectFunction(function<void(int, size_t)> disconnect_function) {
+    disconnect_function_ = disconnect_function;
 }
 
 /*
