@@ -36,11 +36,13 @@ Packet PacketCreator::inform(bool result) {
 	return packet;
 }
 
-Packet PacketCreator::send(const string& file, const vector<unsigned char>& bytes) {
+Packet PacketCreator::send(int id, const string& file, const vector<unsigned char>& bytes, bool result) {
 	Packet packet;
 	packet.addHeader(HEADER_SEND);
+	packet.addInt(id);
 	packet.addString(file);
 	packet.addBytes(bytes);
+	packet.addBool(result);
 	packet.finalize();
 	
 	return packet;

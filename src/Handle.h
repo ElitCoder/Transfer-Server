@@ -20,6 +20,7 @@ private:
 	void handleAvailable();
 	void handleInform();
 	void handleSend();
+	void handleSendResult();
 	
 	bool exists(const std::string& name);
 	size_t getID(const std::string& name);

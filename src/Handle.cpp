@@ -54,6 +54,9 @@ void Handle::process(int fd, size_t connection_id, Packet& packet) {
 			
 		case HEADER_SEND: handleSend();
 			break;
+			
+		case HEADER_SEND_RESULT: handleSendResult();
+			break;
 
 		default: {
 			Log(WARNING) << "Unknown packet header ";
@@ -93,12 +96,19 @@ void Handle::handleSend() {
 	auto to = packet_->getString();
 	auto file = packet_->getString();
 	auto bytes = packet_->getBytes();
+	auto first = packet_->getBool();
 	
 	// Find out where to send the bytes
 	auto id = getID(to);
 	
-	Base::network().sendUnique(id, PacketCreator::send(file, bytes));
-	Base::network().sendUnique(id_, PacketCreator::sendResult(exists(to)));
+	Base::network().sendUnique(id, PacketCreator::send(id_, file, bytes, first));
+}
+
+void Handle::handleSendResult() {
+	auto id = packet_->getInt();
+	auto result = packet_->getBool();
+		
+	Base::network().sendUnique(id, PacketCreator::sendResult(result));
 }
 
 bool Handle::exists(const string& name) {
