@@ -17,9 +17,9 @@ public:
 		
 private:
 	void handleJoin();
+	void handleAvailable();
 	
 	bool exists(const std::string& name);
-	bool exists(size_t id);
 	
 	void processDisconnects();
 	

@@ -35,19 +35,18 @@ void Handle::processDisconnects() {
 
 void Handle::process(int fd, size_t connection_id, Packet& packet) {
 	processDisconnects();
-	
-	auto header = packet.getByte();
-	
-	// See if the user exists before returning packets unless it's a join packet
-	if (header != HEADER_JOIN && !exists(connection_id))
-		return;
 
 	fd_ = fd;
 	id_ = connection_id;
 	packet_ = &packet;
 	
+	auto header = packet.getByte();
+	
 	switch (header) {
 		case HEADER_JOIN: handleJoin();
+			break;
+			
+		case HEADER_AVAILABLE: handleAvailable();
 			break;
 
 		default: {
@@ -70,14 +69,14 @@ void Handle::handleJoin() {
 	Base::network().send(fd_, PacketCreator::join(unique));
 }
 
-bool Handle::exists(const string& name) {
-	auto iterator = find_if(connections_.begin(), connections_.end(), [&name] (auto& peer) { return peer.second == name; });
+void Handle::handleAvailable() {
+	auto packet = PacketCreator::available(connections_);
 	
-	return iterator != connections_.end();
+	Base::network().send(fd_, packet);
 }
 
-bool Handle::exists(size_t id) {
-	auto iterator = find_if(connections_.begin(), connections_.end(), [&id] (auto& peer) { return peer.first == id; });
+bool Handle::exists(const string& name) {
+	auto iterator = find_if(connections_.begin(), connections_.end(), [&name] (auto& peer) { return peer.second == name; });
 	
 	return iterator != connections_.end();
 }
