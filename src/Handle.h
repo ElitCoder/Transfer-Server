@@ -18,8 +18,11 @@ public:
 private:
 	void handleJoin();
 	void handleAvailable();
+	void handleInform();
+	void handleSend();
 	
 	bool exists(const std::string& name);
+	size_t getID(const std::string& name);
 	
 	void processDisconnects();
 	

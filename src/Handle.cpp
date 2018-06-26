@@ -48,6 +48,12 @@ void Handle::process(int fd, size_t connection_id, Packet& packet) {
 			
 		case HEADER_AVAILABLE: handleAvailable();
 			break;
+			
+		case HEADER_INFORM: handleInform();
+			break;
+			
+		case HEADER_SEND: handleSend();
+			break;
 
 		default: {
 			Log(WARNING) << "Unknown packet header ";
@@ -75,8 +81,37 @@ void Handle::handleAvailable() {
 	Base::network().send(fd_, packet);
 }
 
+void Handle::handleInform() {
+	auto to = packet_->getString();
+	auto file = packet_->getString();
+	
+	// Accept if the client is connected
+	Base::network().send(fd_, PacketCreator::inform(exists(to)));
+}
+
+void Handle::handleSend() {
+	auto to = packet_->getString();
+	auto file = packet_->getString();
+	auto bytes = packet_->getBytes();
+	
+	// Find out where to send the bytes
+	auto id = getID(to);
+	
+	Base::network().sendUnique(id, PacketCreator::send(file, bytes));
+	Base::network().sendUnique(id_, PacketCreator::sendResult(exists(to)));
+}
+
 bool Handle::exists(const string& name) {
 	auto iterator = find_if(connections_.begin(), connections_.end(), [&name] (auto& peer) { return peer.second == name; });
 	
 	return iterator != connections_.end();
+}
+
+size_t Handle::getID(const string& name) {
+	auto iterator = find_if(connections_.begin(), connections_.end(), [&name] (auto& peer) { return peer.second == name; });
+
+	if (iterator == connections_.end())
+		throw exception();
+
+	return iterator->first;
 }

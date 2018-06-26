@@ -71,6 +71,17 @@ void Packet::addPointer(const unsigned char *ptr, const unsigned int size) {
     m_packet.insert(m_packet.end(), ptr, ptr + size);
 }
 
+void Packet::addBytes(const vector<unsigned char>& bytes) {
+    if (isFinalized()) {
+        Log(ERROR) << "Can't add anything to a finalized packet\n";
+        
+        return;
+    }
+    
+    addInt(bytes.size());
+    m_packet.insert(m_packet.end(), bytes.begin(), bytes.end());
+}
+
 void Packet::addInt(const int nbr) {
     if(isFinalized()) {
         Log(ERROR) << "Can't add anything to a finalized packet\n";
@@ -107,10 +118,6 @@ void Packet::addFloat(const float nbr) {
     m_packet.insert(m_packet.end(), floatString.begin(), floatString.end());
 }
 
-bool Packet::getBool() {
-    return m_packet.at(m_read++) == 1 ? true : false;
-}
-
 float Packet::getFloat() {
     unsigned char length = m_packet.at(m_read++);
     
@@ -118,6 +125,10 @@ float Packet::getFloat() {
     m_read += length;
     
     return stof(str);
+}
+
+bool Packet::getBool() {
+    return m_packet.at(m_read++) == 1 ? true : false;
 }
 
 string Packet::getString() {
@@ -182,6 +193,15 @@ int Packet::getInt() {
     }
     
     return nbr;
+}
+
+vector<unsigned char> Packet::getBytes() {
+    auto size = getInt();
+    
+    vector<unsigned char> bytes(m_packet.begin() + m_read, m_packet.begin() + m_read + size);
+    m_read += size;
+    
+    return bytes;
 }
 
 void Packet::addSent(const int sent) {

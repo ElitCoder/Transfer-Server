@@ -26,3 +26,31 @@ Packet PacketCreator::available(const vector<pair<size_t, string>>& connections)
 	
 	return packet;
 }
+
+Packet PacketCreator::inform(bool result) {
+	Packet packet;
+	packet.addHeader(HEADER_INFORM);
+	packet.addBool(result);
+	packet.finalize();
+	
+	return packet;
+}
+
+Packet PacketCreator::send(const string& file, const vector<unsigned char>& bytes) {
+	Packet packet;
+	packet.addHeader(HEADER_SEND);
+	packet.addString(file);
+	packet.addBytes(bytes);
+	packet.finalize();
+	
+	return packet;
+}
+
+Packet PacketCreator::sendResult(bool result) {
+	Packet packet;
+	packet.addHeader(HEADER_SEND_RESULT);
+	packet.addBool(result);
+	packet.finalize();
+	
+	return packet;
+}
