@@ -91,6 +91,7 @@ void Handle::handleAvailable() {
 void Handle::handleInform() {
 	auto to = packet_->getString();
 	auto file = packet_->getString();
+	auto directory = packet_->getString();
 	
 	// Accept if the client is connected
 	Base::network().send(fd_, PacketCreator::inform(exists(to)));
@@ -99,13 +100,14 @@ void Handle::handleInform() {
 void Handle::handleSend() {
 	auto to = packet_->getString();
 	auto file = packet_->getString();
+	auto directory = packet_->getString();
 	auto bytes = packet_->getBytes();
 	auto first = packet_->getBool();
 	
 	// Find out where to send the bytes
 	auto id = getID(to);
 	
-	Base::network().sendUnique(id, PacketCreator::send(id_, file, bytes, first));
+	Base::network().sendUnique(id, PacketCreator::send(id_, file, directory, bytes, first));
 }
 
 void Handle::handleSendResult() {
