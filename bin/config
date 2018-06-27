@@ -1,0 +1,7 @@
+# Accepted protocol
+standard: a1
+
+# Network settings
+port: 12000
+sending_threads: 4
+receiving_threads: 4

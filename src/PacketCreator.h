@@ -10,7 +10,8 @@ enum {
 	HEADER_AVAILABLE,
 	HEADER_INFORM,
 	HEADER_SEND,
-	HEADER_SEND_RESULT
+	HEADER_SEND_RESULT,
+	HEADER_INITIALIZE
 };
 
 class Packet;
@@ -22,6 +23,7 @@ public:
 	static Packet inform(bool result);
 	static Packet send(int id, const std::string& file, const std::vector<unsigned char>& bytes, bool result);
 	static Packet sendResult(bool result);
+	static Packet initialize(bool result);
 };
 
 #endif

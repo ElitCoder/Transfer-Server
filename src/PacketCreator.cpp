@@ -56,3 +56,12 @@ Packet PacketCreator::sendResult(bool result) {
 	
 	return packet;
 }
+
+Packet PacketCreator::initialize(bool result) {
+	Packet packet;
+	packet.addHeader(HEADER_INITIALIZE);
+	packet.addBool(result);
+	packet.finalize();
+	
+	return packet;
+}

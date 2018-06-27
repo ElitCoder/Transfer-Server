@@ -4,6 +4,7 @@
 #include "PacketCreator.h"
 #include "Base.h"
 #include "NetworkCommunication.h"
+#include "Config.h"
 
 #include <algorithm>
 
@@ -57,6 +58,9 @@ void Handle::process(int fd, size_t connection_id, Packet& packet) {
 			
 		case HEADER_SEND_RESULT: handleSendResult();
 			break;
+			
+		case HEADER_INITIALIZE: handleInitialize();
+			break;
 
 		default: {
 			Log(WARNING) << "Unknown packet header ";
@@ -109,6 +113,18 @@ void Handle::handleSendResult() {
 	auto result = packet_->getBool();
 		
 	Base::network().sendUnique(id, PacketCreator::sendResult(result));
+}
+
+void Handle::handleInitialize() {
+	auto version = packet_->getString();
+	
+	auto required = Base::config().get<string>("standard", "");
+	auto accepted = lexicographical_compare(version.begin(), version.end(), required.begin(), required.end());
+	
+	if (version == required)
+		accepted = true;
+
+	Base::network().sendUnique(id_, PacketCreator::initialize(accepted));
 }
 
 bool Handle::exists(const string& name) {
