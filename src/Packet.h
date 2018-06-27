@@ -41,6 +41,8 @@ public:
     
     void deepCopy(const Packet& packet);
     
+    std::shared_ptr<std::vector<unsigned char>>& internal();
+    
 private:
     bool isFinalized() const;
     

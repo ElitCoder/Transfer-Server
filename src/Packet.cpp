@@ -9,6 +9,10 @@ using namespace std;
 
 Packet::Packet() : m_sent(0), m_read(0), m_finalized(false) {
     m_packet = make_shared<vector<unsigned char>>();
+    
+    // Insert header placeholders
+    for (int i = 0; i < 4; i++)
+        m_packet->push_back(0);
 }
 
 Packet::Packet(const unsigned char *buffer, const unsigned int size) : m_sent(0), m_read(0), m_finalized(false) {
@@ -19,6 +23,13 @@ Packet::Packet(const unsigned char *buffer, const unsigned int size) : m_sent(0)
     }
     
     m_packet = make_shared<vector<unsigned char>>();
+    
+    m_packet->reserve(size + 4);
+    
+    // Insert header placeholders
+    for (int i = 0; i < 4; i++)
+        m_packet->push_back(0);
+    
     m_packet->insert(m_packet->end(), buffer, buffer + size);
 }
 
@@ -59,6 +70,8 @@ void Packet::addPointer(const unsigned char *ptr, const unsigned int size) {
     }
     
     addInt(size);
+    
+    m_packet->reserve(m_packet->size() + size);
     m_packet->insert(m_packet->end(), ptr, ptr + size);
 }
 
@@ -70,6 +83,11 @@ void Packet::addBytes(const pair<size_t, const unsigned char*>& bytes) {
     }
     
     addInt(bytes.first);
+    
+    if (bytes.first == 0)
+        return;
+
+    m_packet->reserve(m_packet->size() + bytes.first);
     m_packet->insert(m_packet->end(), bytes.second, bytes.second + bytes.first);
 }
 
@@ -214,7 +232,7 @@ void Packet::finalize() {
         return;
     }
     
-    unsigned int fullPacketSize = m_packet->size() + 4;
+    unsigned int fullPacketSize = m_packet->size();
     array<unsigned int, 4> packetSize;
     
     packetSize[0] = (fullPacketSize >> 24) & 0xFF;
@@ -222,7 +240,8 @@ void Packet::finalize() {
     packetSize[2] = (fullPacketSize >> 8) & 0xFF;
     packetSize[3] = fullPacketSize & 0xFF;
     
-    m_packet->insert(m_packet->begin(), packetSize.begin(), packetSize.end());
+    for (size_t i = 0; i < packetSize.size(); i++)
+        m_packet->at(i) = packetSize.at(i);
     
     m_finalized = true;
 }
@@ -240,4 +259,8 @@ void Packet::deepCopy(const Packet& packet) {
     
     // Deep copy vectors
     *(m_packet.get()) = *(packet.m_packet.get());
+}
+
+shared_ptr<vector<unsigned char>>& Packet::internal() {
+    return m_packet;
 }
