@@ -36,7 +36,7 @@ Packet PacketCreator::inform(bool result) {
 	return packet;
 }
 
-Packet PacketCreator::send(int id, const string& file, const string& directory, const vector<unsigned char>& bytes, bool result) {
+Packet PacketCreator::send(int id, const string& file, const string& directory, const std::pair<size_t, const unsigned char*>& bytes, bool result) {
 	Packet packet;
 	packet.addHeader(HEADER_SEND);
 	packet.addInt(id);

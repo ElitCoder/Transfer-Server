@@ -474,16 +474,21 @@ pair<int, Packet>& NetworkCommunication::waitForOutgoingPackets(int thread_id) {
     return mOutgoingPackets.at(thread_id).front();
 }
 
-void NetworkCommunication::addOutgoingPacket(const int fd, const Packet &packet) {
+void NetworkCommunication::addOutgoingPacket(const int fd, const Packet &packet, bool safe_send) {
     auto index = fd % num_sending_threads_;
+    
+    Packet new_packet = packet;
+    
+    if (safe_send)
+        new_packet.deepCopy(packet);
         
     lock_guard<mutex> guard(*mOutgoingMutex.at(index));
-    mOutgoingPackets.at(index).push_back({ fd, packet });
+    mOutgoingPackets.at(index).push_back({ fd, new_packet });
     mOutgoingCV.at(index)->notify_one();
 }
 
-void NetworkCommunication::send(int fd, const Packet& packet) {
-    addOutgoingPacket(fd, packet);
+void NetworkCommunication::send(int fd, const Packet& packet, bool safe_send) {
+    addOutgoingPacket(fd, packet, safe_send);
 }
 
 int NetworkCommunication::getConnectionSocket(size_t unique_id) {
@@ -500,7 +505,7 @@ int NetworkCommunication::getConnectionSocket(size_t unique_id) {
     return -1;
 }
 
-void NetworkCommunication::sendUnique(size_t id, const Packet& packet) {
+void NetworkCommunication::sendUnique(size_t id, const Packet& packet, bool safe_send) {
     auto fd = getConnectionSocket(id);
     
     if (fd < 0) {
@@ -509,7 +514,7 @@ void NetworkCommunication::sendUnique(size_t id, const Packet& packet) {
         return;
     }
         
-    addOutgoingPacket(fd, packet);
+    addOutgoingPacket(fd, packet, safe_send);
 }
 
 void NetworkCommunication::removeOutgoingPacket(int thread_id) {

@@ -52,9 +52,9 @@ public:
     
     std::pair<int, Packet>& waitForOutgoingPackets(int thread_id);
     void removeOutgoingPacket(int thread_id);
-    void addOutgoingPacket(const int fd, const Packet &packet);
-    void send(int fd, const Packet& packet);
-    void sendUnique(size_t id, const Packet& packet);
+    void addOutgoingPacket(const int fd, const Packet &packet, bool safe_send = true);
+    void send(int fd, const Packet& packet, bool safe_send = true);
+    void sendUnique(size_t id, const Packet& packet, bool safe_send = true);
     
     std::tuple<int, size_t, Packet> waitForProcessingPackets();
     

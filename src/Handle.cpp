@@ -107,7 +107,7 @@ void Handle::handleSend() {
 	// Find out where to send the bytes
 	auto id = getID(to);
 	
-	Base::network().sendUnique(id, PacketCreator::send(id_, file, directory, bytes, first));
+	Base::network().sendUnique(id, PacketCreator::send(id_, file, directory, bytes, first), false);
 }
 
 void Handle::handleSendResult() {

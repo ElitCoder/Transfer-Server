@@ -21,7 +21,7 @@ public:
 	static Packet join(bool result);
 	static Packet available(const std::vector<std::pair<size_t, std::string>>& connections);
 	static Packet inform(bool result);
-	static Packet send(int id, const std::string& file, const std::string& directory, const std::vector<unsigned char>& bytes, bool result);
+	static Packet send(int id, const std::string& file, const std::string& directory, const std::pair<size_t, const unsigned char*>& bytes, bool result);
 	static Packet sendResult(bool result);
 	static Packet initialize(bool result);
 };
