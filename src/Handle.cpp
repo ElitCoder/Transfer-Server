@@ -121,12 +121,15 @@ void Handle::handleInitialize() {
 	auto version = packet_->getString();
 	
 	auto required = Base::config().get<string>("standard", "");
-	auto accepted = lexicographical_compare(version.begin(), version.end(), required.begin(), required.end());
+	auto accepted = !lexicographical_compare(version.begin(), version.end(), required.begin(), required.end());
 	
 	if (version == required)
 		accepted = true;
+		
+	auto client_url = Base::config().get<string>("client_url", "");
+	auto update_url = Base::config().get<string>("update_url", "");
 
-	Base::network().sendID(id_, PacketCreator::initialize(accepted));
+	Base::network().sendID(id_, PacketCreator::initialize(accepted, ERROR_OLD_PROTOCOL, client_url, update_url));
 }
 
 bool Handle::exists(const string& name) {

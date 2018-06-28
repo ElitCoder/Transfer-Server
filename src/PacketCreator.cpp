@@ -58,10 +58,13 @@ Packet PacketCreator::sendResult(bool result) {
 	return packet;
 }
 
-Packet PacketCreator::initialize(bool result) {
+Packet PacketCreator::initialize(bool result, int code, const string& client, const string& update) {
 	Packet packet;
 	packet.addHeader(HEADER_INITIALIZE);
 	packet.addBool(result);
+	packet.addInt(code);
+	packet.addString(client);
+	packet.addString(update);
 	packet.finalize();
 	
 	return packet;

@@ -8,6 +8,10 @@
 #include <mutex>
 #include <list>
 
+enum {
+	ERROR_OLD_PROTOCOL
+};
+
 class Packet;
 
 class Handle {

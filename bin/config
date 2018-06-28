@@ -5,3 +5,7 @@ standard: a2
 port: 12000
 sending_threads: 4
 receiving_threads: 4
+
+# Update
+client_url: https://raw.githubusercontent.com/ElitCoder/Transfer-Client/master/rel_bin/transfer_client_linux.zip
+update_url: https://raw.githubusercontent.com/ElitCoder/Transfer-Client/master/rel_bin/update.sh
