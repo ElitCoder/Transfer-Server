@@ -9,6 +9,7 @@
 #include <list>
 #include <unordered_map>
 #include <functional>
+#include <unordered_set>
 
 enum NetworkConstants {
     BUFFER_SIZE = 1048576,
@@ -43,18 +44,19 @@ public:
     
     void setFileDescriptorsAccept(fd_set &readSet, fd_set &errorSet);
     void setFileDescriptorsReceive(fd_set &readSet, fd_set &errorSet, int thread_id);
+    void setFileDescriptorsSend(fd_set& sendSet, fd_set& errorSet, int thread_id, std::unordered_set<int>& fds);
     
     bool runSelectAccept(fd_set &readSet, fd_set &errorSet);
     bool runSelectReceive(fd_set &readSet, fd_set &errorSet, unsigned char *buffer, int thread_id);
+    bool runSelectSend(fd_set& sendSet, fd_set& errorSet, int thread_id, const std::unordered_set<int>& fds);
     
     int getSocket() const;
     int getConnectionSocket(size_t unique_id);
     
-    std::pair<int, Packet>& waitForOutgoingPackets(int thread_id);
-    void removeOutgoingPacket(int thread_id);
+    void waitForOutgoingPackets(int thread_id);
     void addOutgoingPacket(const int fd, const Packet &packet, bool safe_send = true);
-    void send(int fd, const Packet& packet, bool safe_send = true);
-    void sendUnique(size_t id, const Packet& packet, bool safe_send = true);
+    void sendFD(int fd, const Packet& packet, bool safe_send = true);
+    void sendID(size_t id, const Packet& packet, bool safe_send = true);
     
     std::tuple<int, size_t, Packet> waitForProcessingPackets();
     

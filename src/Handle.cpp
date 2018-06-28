@@ -79,13 +79,13 @@ void Handle::handleJoin() {
 	if (unique)
 		connections_.push_back({ id_, name });
 	
-	Base::network().send(fd_, PacketCreator::join(unique));
+	Base::network().sendFD(fd_, PacketCreator::join(unique));
 }
 
 void Handle::handleAvailable() {
 	auto packet = PacketCreator::available(connections_);
 	
-	Base::network().send(fd_, packet);
+	Base::network().sendFD(fd_, packet);
 }
 
 void Handle::handleInform() {
@@ -94,7 +94,7 @@ void Handle::handleInform() {
 	auto directory = packet_->getString();
 	
 	// Accept if the client is connected
-	Base::network().send(fd_, PacketCreator::inform(exists(to)));
+	Base::network().sendFD(fd_, PacketCreator::inform(exists(to)));
 }
 
 void Handle::handleSend() {
@@ -107,14 +107,14 @@ void Handle::handleSend() {
 	// Find out where to send the bytes
 	auto id = getID(to);
 	
-	Base::network().sendUnique(id, PacketCreator::send(id_, file, directory, bytes, first), false);
+	Base::network().sendID(id, PacketCreator::send(id_, file, directory, bytes, first), false);
 }
 
 void Handle::handleSendResult() {
 	auto id = packet_->getInt();
 	auto result = packet_->getBool();
 		
-	Base::network().sendUnique(id, PacketCreator::sendResult(result));
+	Base::network().sendID(id, PacketCreator::sendResult(result));
 }
 
 void Handle::handleInitialize() {
@@ -126,7 +126,7 @@ void Handle::handleInitialize() {
 	if (version == required)
 		accepted = true;
 
-	Base::network().sendUnique(id_, PacketCreator::initialize(accepted));
+	Base::network().sendID(id_, PacketCreator::initialize(accepted));
 }
 
 bool Handle::exists(const string& name) {

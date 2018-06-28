@@ -93,48 +93,19 @@ static void statsThread(NetworkCommunication& network, int delay) {
 
 void sendThread(NetworkCommunication &networkCommunication, int thread_id) {
     signal(SIGPIPE, SIG_IGN);
-
+    
+    fd_set sendSet, errorSet;
+    
     while(true) {
-        auto& packet = networkCommunication.waitForOutgoingPackets(thread_id);
+        // Wait for something to send
+        networkCommunication.waitForOutgoingPackets(thread_id);
         
-        int sending = min((unsigned int)NetworkConstants::BUFFER_SIZE, packet.second.getSize() - packet.second.getSent());
-        int sent = send(packet.first, packet.second.getData() + packet.second.getSent(), sending, 0);
+        unordered_set<int> fds;
+        networkCommunication.setFileDescriptorsSend(sendSet, errorSet, thread_id, fds);
         
-        bool removePacket = false;
-        
-        if(sent <= 0) {
-            if(sent == 0) {
-                removePacket = true;
-            }
-            
-            else {
-                if(errno == EWOULDBLOCK || errno == EAGAIN) {
-                    Log(WARNING) << "Send warning ";
-                    
-                    if (errno == EWOULDBLOCK)
-                        Log(NONE) << "EWOULDBLOCK\n";
-                    else
-                        Log(NONE) << "EAGAIN\n";
-                    
-                    continue;
-                }
-                
-                else {
-                    removePacket = true;
-                }
-            }
+        if(!networkCommunication.runSelectSend(sendSet, errorSet, thread_id, fds)) {
+            break;
         }
-        
-        else {
-            packet.second.addSent(sent);
-            
-            if(packet.second.fullySent()) {
-                removePacket = true;
-            }
-        }
-        
-        if(removePacket)
-            networkCommunication.removeOutgoingPacket(thread_id);
     }
     
     Log(ERROR) << "Terminating sendThread\n";
@@ -327,9 +298,108 @@ void NetworkCommunication::setFileDescriptorsReceive(fd_set &readSet, fd_set &er
     });
 }
 
+void NetworkCommunication::setFileDescriptorsSend(fd_set& sendSet, fd_set& errorSet, int thread_id, unordered_set<int>& fds) {
+    FD_ZERO(&sendSet);
+    FD_ZERO(&errorSet);
+    
+    lock_guard<mutex> lock(*mOutgoingMutex.at(thread_id));
+    
+    // Remove duplicate file descriptors
+    for (auto& peer : mOutgoingPackets.at(thread_id))
+        fds.insert(peer.first);
+        
+    // Insert into fd_set's
+    for (auto& fd : fds) {
+        FD_SET(fd, &sendSet);
+        FD_SET(fd, &errorSet);
+    }
+}
+
+bool NetworkCommunication::runSelectSend(fd_set& sendSet, fd_set& errorSet, int thread_id, const unordered_set<int>& fds) {
+    if (select(FD_SETSIZE, NULL, &sendSet, &errorSet, NULL) == 0) {
+        Log(ERROR) << "select() returned 0 when there's no timeout on sending thread " << thread_id << endl;
+        
+        return false;
+    }
+    
+    lock_guard<mutex> lock(*mOutgoingMutex.at(thread_id));
+    
+    // Iterate through file descriptors to see which is able to send
+    for (auto& fd : fds) {
+        if (FD_ISSET(fd, &errorSet)) {
+            // Remove all packets going to this file descriptor
+            Log(DEBUG) << "Removing packets from " << fd << endl;
+            
+            mOutgoingPackets.at(thread_id).erase(remove_if(mOutgoingPackets.at(thread_id).begin(), mOutgoingPackets.at(thread_id).end(), [&fd] (auto& peer) {
+                return fd == peer.first;
+            }), mOutgoingPackets.at(thread_id).end());
+            
+            continue;
+        }
+        
+        if (FD_ISSET(fd, &sendSet)) {
+            // It's possible to send something
+            // Find a packet in the queue belonging to this descriptor
+            //for (auto& peer : mOutgoingPackets.at(thread_id)) {
+            for (auto iterator = mOutgoingPackets.at(thread_id).begin(); iterator != mOutgoingPackets.at(thread_id).end(); ++iterator) {
+                auto& peer = *iterator;
+                
+                if (peer.first != fd)
+                    continue;
+                    
+                // Found one
+                auto& packet = peer.second;
+                
+                int sending = min((unsigned int)NetworkConstants::BUFFER_SIZE, packet.getSize() - packet.getSent());
+                int sent = send(fd, packet.getData() + packet.getSent(), sending, 0);
+                
+                bool removePacket = false;
+                
+                if(sent <= 0) {
+                    if(sent == 0) {
+                        removePacket = true;
+                    }
+                    
+                    else {
+                        if(errno == EWOULDBLOCK || errno == EAGAIN) {
+                            Log(WARNING) << "Send warning ";
+                            
+                            if (errno == EWOULDBLOCK)
+                                Log(NONE) << "EWOULDBLOCK\n";
+                            else
+                                Log(NONE) << "EAGAIN\n";
+                            
+                            continue;
+                        }
+                        
+                        else {
+                            removePacket = true;
+                        }
+                    }
+                }
+                
+                else {
+                    packet.addSent(sent);
+                    
+                    if(packet.fullySent()) {
+                        removePacket = true;
+                    }
+                }
+                
+                if(removePacket)
+                    mOutgoingPackets.at(thread_id).erase(iterator);
+                    
+                break;
+            }
+        }
+    }
+    
+    return true;
+}
+
 bool NetworkCommunication::runSelectReceive(fd_set &readSet, fd_set &errorSet, unsigned char *buffer, int thread_id) {    
     if(select(FD_SETSIZE, &readSet, NULL, &errorSet, NULL) == 0) {
-        Log(ERROR) << "select() returned 0 when there's no timeout\n";
+        Log(ERROR) << "select() returned 0 when there's no timeout on receiving thread " << thread_id << endl;
         
         return false;
     }
@@ -474,11 +544,9 @@ int NetworkCommunication::getSocket() const {
     return mSocket;
 }
 
-pair<int, Packet>& NetworkCommunication::waitForOutgoingPackets(int thread_id) {
+void NetworkCommunication::waitForOutgoingPackets(int thread_id) {
     unique_lock<mutex> lock(*mOutgoingMutex.at(thread_id));
     mOutgoingCV.at(thread_id)->wait(lock, [this, &thread_id] { return !mOutgoingPackets.at(thread_id).empty(); });
-    
-    return mOutgoingPackets.at(thread_id).front();
 }
 
 void NetworkCommunication::addOutgoingPacket(const int fd, const Packet &packet, bool safe_send) {
@@ -494,7 +562,7 @@ void NetworkCommunication::addOutgoingPacket(const int fd, const Packet &packet,
     mOutgoingCV.at(index)->notify_one();
 }
 
-void NetworkCommunication::send(int fd, const Packet& packet, bool safe_send) {
+void NetworkCommunication::sendFD(int fd, const Packet& packet, bool safe_send) {
     addOutgoingPacket(fd, packet, safe_send);
 }
 
@@ -512,7 +580,7 @@ int NetworkCommunication::getConnectionSocket(size_t unique_id) {
     return -1;
 }
 
-void NetworkCommunication::sendUnique(size_t id, const Packet& packet, bool safe_send) {
+void NetworkCommunication::sendID(size_t id, const Packet& packet, bool safe_send) {
     auto fd = getConnectionSocket(id);
     
     if (fd < 0) {
@@ -522,18 +590,6 @@ void NetworkCommunication::sendUnique(size_t id, const Packet& packet, bool safe
     }
         
     addOutgoingPacket(fd, packet, safe_send);
-}
-
-void NetworkCommunication::removeOutgoingPacket(int thread_id) {
-    lock_guard<mutex> guard(*mOutgoingMutex.at(thread_id));
-    
-    if(mOutgoingPackets.at(thread_id).empty()) {
-        Log(ERROR) << "Trying to pop when outgoingPackets is empty\n";
-        
-        return;
-    }
-    
-    mOutgoingPackets.at(thread_id).pop_front();
 }
 
 tuple<int, size_t, Packet> NetworkCommunication::waitForProcessingPackets() {
