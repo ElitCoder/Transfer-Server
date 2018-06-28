@@ -11,7 +11,7 @@
 #include <functional>
 
 enum NetworkConstants {
-    BUFFER_SIZE = 65536,
+    BUFFER_SIZE = 1048576,
     MAX_WAITING_PACKETS_PER_CLIENT = 10
 };
 

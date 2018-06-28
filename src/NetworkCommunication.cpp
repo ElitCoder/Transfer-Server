@@ -109,6 +109,13 @@ void sendThread(NetworkCommunication &networkCommunication, int thread_id) {
             
             else {
                 if(errno == EWOULDBLOCK || errno == EAGAIN) {
+                    Log(WARNING) << "Send warning ";
+                    
+                    if (errno == EWOULDBLOCK)
+                        Log(NONE) << "EWOULDBLOCK\n";
+                    else
+                        Log(NONE) << "EAGAIN\n";
+                    
                     continue;
                 }
                 
