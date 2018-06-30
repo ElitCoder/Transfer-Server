@@ -109,6 +109,7 @@ void Handle::handleInformResult() {
 	auto accepted = packet_->getBool();
 	auto id = packet_->getInt();
 	auto num_addresses = packet_->getInt();
+	auto receiving_port = packet_->getInt();
 	
 	vector<string> addresses;
 	
@@ -124,7 +125,7 @@ void Handle::handleInformResult() {
 	if (ip_sender == ip_receiver)
 		same_external = true;
 		
-	Base::network().sendID(id, PacketCreator::inform(accepted, same_external, addresses));
+	Base::network().sendID(id, PacketCreator::inform(accepted, same_external, receiving_port, addresses));
 }
 
 void Handle::handleSend() {
