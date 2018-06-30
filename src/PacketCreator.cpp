@@ -43,12 +43,13 @@ Packet PacketCreator::inform(bool result, bool try_direct, int port, const vecto
 	return packet;
 }
 
-Packet PacketCreator::informResult(int id, const string& file, const string& directory) {
+Packet PacketCreator::informResult(int id, const string& file, const string& directory, bool direct_possible) {
 	Packet packet;
 	packet.addHeader(HEADER_INFORM_RESULT);
 	packet.addInt(id);
 	packet.addString(file);
 	packet.addString(directory);
+	packet.addBool(direct_possible);
 	packet.finalize();
 	
 	return packet;

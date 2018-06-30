@@ -91,20 +91,6 @@ void Handle::handleAvailable() {
 	Base::network().sendFD(fd_, packet);
 }
 
-void Handle::handleInform() {
-	auto to = packet_->getString();
-	auto file = packet_->getString();
-	auto directory = packet_->getString();
-	
-	if (exists(to)) {
-		// Ask receiving client for local IP to determine if local direct connection is possible
-		Base::network().sendID(getID(to), PacketCreator::informResult(id_, file, directory));
-	} else {
-		// Deny since the client is not connected
-		Base::network().sendFD(fd_, PacketCreator::inform(false));
-	}
-}
-
 static deque<string> getTokens(string input, char delimiter) {
 	istringstream stream(input);
 	deque<string> tokens;
@@ -117,20 +103,7 @@ static deque<string> getTokens(string input, char delimiter) {
 	return tokens;
 }
 
-void Handle::handleInformResult() {
-	auto accepted = packet_->getBool();
-	auto id = packet_->getInt();
-	auto num_addresses = packet_->getInt();
-	auto receiving_port = packet_->getInt();
-	
-	vector<string> addresses;
-	
-	for (int i = 0; i < num_addresses; i++)
-		addresses.push_back(packet_->getString());
-		
-	auto ip_sender = Base::network().getIP(id);
-	auto ip_receiver = Base::network().getIP(id_);
-	
+static bool isIPMatch(const string& ip_sender, const string& ip_receiver) {
 	Log(DEBUG) << "Sender (" << ip_sender << "), receiver (" << ip_receiver << ")\n";
 	
 	bool same_external = false;
@@ -171,10 +144,53 @@ void Handle::handleInformResult() {
 	bool possibly_lan = same_external || (send_lan && recv_lan);
 	
 	Log(DEBUG) << "Direct connection is " << (possibly_lan ? "enabled" : "disabled") << endl;
+	
+	return possibly_lan;
+}
+
+void Handle::handleInform() {
+	auto to = packet_->getString();
+	auto file = packet_->getString();
+	auto directory = packet_->getString();
+	auto direct_connection = packet_->getBool();
+	
+	if (exists(to)) {
+		auto ip_sender = Base::network().getIP(id_);
+		auto ip_receiver = Base::network().getIP(getID(to));
+		
+		auto direct_connection_possible = isIPMatch(ip_sender, ip_receiver);
+		auto should_direct = direct_connection_possible && direct_connection;
+		
+		// Ask receiving client for local IP to determine if local direct connection is possible
+		Base::network().sendID(getID(to), PacketCreator::informResult(id_, file, directory, should_direct));
+	} else {
+		// Deny since the client is not connected
+		Base::network().sendFD(fd_, PacketCreator::inform(false));
+	}
+}
+
+void Handle::handleInformResult() {
+	auto accepted = packet_->getBool();
+	auto id = packet_->getInt();
+	auto num_addresses = packet_->getInt();
+	auto receiving_port = packet_->getInt();
+	
+	vector<string> addresses;
+	
+	for (int i = 0; i < num_addresses; i++)
+		addresses.push_back(packet_->getString());
+		
+	auto ip_sender = Base::network().getIP(id);
+	auto ip_receiver = Base::network().getIP(id_);
+	
+	auto possibly_lan = isIPMatch(ip_sender, ip_receiver);
 		
 	// If the receiving client does not have any addresses to bind to, disable direct connection
-	if (addresses.empty())
+	if (addresses.empty()) {
 		possibly_lan = false;
+		
+		Log(DEBUG) << "Receiving client config disables direct connection\n";
+	}
 		
 	Base::network().sendID(id, PacketCreator::inform(accepted, possibly_lan, receiving_port, addresses));
 }
