@@ -26,6 +26,7 @@ private:
 	void handleSend();
 	void handleSendResult();
 	void handleInitialize();
+	void handleInformResult();
 	
 	bool exists(const std::string& name);
 	size_t getID(const std::string& name);

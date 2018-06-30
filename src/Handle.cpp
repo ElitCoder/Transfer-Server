@@ -61,6 +61,9 @@ void Handle::process(int fd, size_t connection_id, Packet& packet) {
 			
 		case HEADER_INITIALIZE: handleInitialize();
 			break;
+			
+		case HEADER_INFORM_RESULT: handleInformResult();
+			break;
 
 		default: {
 			Log(WARNING) << "Unknown packet header ";
@@ -93,8 +96,35 @@ void Handle::handleInform() {
 	auto file = packet_->getString();
 	auto directory = packet_->getString();
 	
-	// Accept if the client is connected
-	Base::network().sendFD(fd_, PacketCreator::inform(exists(to)));
+	if (exists(to)) {
+		// Ask receiving client for local IP to determine if local direct connection is possible
+		Base::network().sendID(getID(to), PacketCreator::informResult(id_, file, directory));
+	} else {
+		// Deny since the client is not connected
+		Base::network().sendFD(fd_, PacketCreator::inform(false));
+	}
+}
+
+void Handle::handleInformResult() {
+	auto accepted = packet_->getBool();
+	auto id = packet_->getInt();
+	auto num_addresses = packet_->getInt();
+	
+	vector<string> addresses;
+	
+	for (int i = 0; i < num_addresses; i++)
+		addresses.push_back(packet_->getString());
+		
+	auto ip_sender = Base::network().getIP(id);
+	auto ip_receiver = Base::network().getIP(id_);
+	
+	bool same_external = false;
+	
+	// See if they have the same connecting IP, hence same NAT network
+	if (ip_sender == ip_receiver)
+		same_external = true;
+		
+	Base::network().sendID(id, PacketCreator::inform(accepted, same_external, addresses));
 }
 
 void Handle::handleSend() {

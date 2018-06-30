@@ -27,10 +27,27 @@ Packet PacketCreator::available(const vector<pair<size_t, string>>& connections)
 	return packet;
 }
 
-Packet PacketCreator::inform(bool result) {
+Packet PacketCreator::inform(bool result, bool try_direct, const vector<string>& receiving_addresses) {
 	Packet packet;
 	packet.addHeader(HEADER_INFORM);
 	packet.addBool(result);
+	packet.addBool(try_direct);
+	packet.addInt(receiving_addresses.size());
+	
+	for (auto& address : receiving_addresses)
+		packet.addString(address);
+
+	packet.finalize();
+	
+	return packet;
+}
+
+Packet PacketCreator::informResult(int id, const string& file, const string& directory) {
+	Packet packet;
+	packet.addHeader(HEADER_INFORM_RESULT);
+	packet.addInt(id);
+	packet.addString(file);
+	packet.addString(directory);
 	packet.finalize();
 	
 	return packet;

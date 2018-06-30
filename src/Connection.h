@@ -24,12 +24,14 @@ public:
     void processedPacket();
     
     bool isVerified() const;
+    void setIP(const std::string& ip);
     
     size_t packetsWaiting();
     void reducePacketsWaiting();
     void increasePacketsWaiting();
     
     size_t getUniqueID() const;
+    const std::string& getIP() const;
     
 private:
     int socket_;
@@ -39,6 +41,7 @@ private:
     std::shared_ptr<std::mutex> waiting_processing_mutex_;
     
     size_t unique_id_ = 0;
+    std::string ip_;
 };
 
 #endif

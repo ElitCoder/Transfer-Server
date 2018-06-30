@@ -52,6 +52,7 @@ public:
     
     int getSocket() const;
     int getConnectionSocket(size_t unique_id);
+    std::string getIP(size_t unique_id) const;
     
     void waitForOutgoingPackets(int thread_id);
     void addOutgoingPacket(const int fd, const Packet &packet, bool safe_send = true);

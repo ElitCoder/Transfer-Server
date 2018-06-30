@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <fcntl.h>
+#include <arpa/inet.h>
 
 using namespace std;
 
@@ -514,7 +515,11 @@ bool NetworkCommunication::runSelectAccept(fd_set &readSet, fd_set &errorSet) {
     }
     
     if(FD_ISSET(mSocket, &readSet)) {
-        int newSocket = accept(mSocket, 0, 0);
+        sockaddr_in client;
+        client.sin_family = AF_INET;
+        socklen_t client_len = sizeof client;
+        
+        int newSocket = accept(mSocket, (sockaddr*)&client, &client_len);
         
         if(newSocket < 0) {
             Log(ERROR) << "accept() failed with " << errno << endl;
@@ -523,14 +528,17 @@ bool NetworkCommunication::runSelectAccept(fd_set &readSet, fd_set &errorSet) {
         }
         
         int index = newSocket % num_receiving_threads_;
+        string ip = inet_ntoa(client.sin_addr);
         
         {
             lock_guard<mutex> guard(*mConnectionsMutex.at(index));
             
             Connection connection(newSocket);
+            connection.setIP(ip);
+            
             mConnections.at(index).insert({ connection.getUniqueID(), connection });
             
-            Log(INFORMATION) << "Connection #" << connection.getUniqueID() << " added\n";
+            Log(INFORMATION) << "Connection #" << connection.getUniqueID() << " added from " << ip << "\n";
             Log(DEBUG) << "Socket ID " << connection.getSocket() << endl;
         }
         
@@ -624,6 +632,23 @@ tuple<int, size_t, Packet> NetworkCommunication::waitForProcessingPackets() {
 
 void NetworkCommunication::registerDisconnectFunction(function<void(int, size_t)> disconnect_function) {
     disconnect_function_ = disconnect_function;
+}
+
+string NetworkCommunication::getIP(size_t unique_id) const {
+    // Iterate through threads to find correct ID
+    for (size_t i = 0; i < mConnections.size(); i++) {
+        lock_guard<mutex> lock(*mConnectionsMutex.at(i));
+        auto& queue = mConnections.at(i);
+        
+        auto iterator = queue.find(unique_id);
+        
+        if (iterator == queue.end())
+            continue;
+            
+        iterator->second.getIP();
+    }
+    
+    return "not found";
 }
 
 /*

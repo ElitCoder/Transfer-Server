@@ -100,3 +100,11 @@ void Connection::increasePacketsWaiting() {
     
     waiting_processing_++;
 }
+
+void Connection::setIP(const string& ip) {
+    ip_ = ip;
+}
+
+const string& Connection::getIP() const {
+    return ip_;
+}
