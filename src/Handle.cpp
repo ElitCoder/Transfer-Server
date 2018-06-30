@@ -153,12 +153,12 @@ void Handle::handleInformResult() {
 		bool send_lan_tmp = true;
 		bool recv_lan_tmp = true;
 		
-		for (size_t i = 0; i < lan_tokens.size(); i++) {
+		for (size_t i = 0; i < lan_tokens.size(); i++) {	
 			if (send_tokens.size() > i && lan_tokens.at(i) != send_tokens.at(i))
 				send_lan_tmp = false;
 				
 			if (recv_tokens.size() > i && lan_tokens.at(i) != recv_tokens.at(i))
-				send_lan_tmp = false;
+				recv_lan_tmp = false;
 		}
 		
 		if (send_lan_tmp)
