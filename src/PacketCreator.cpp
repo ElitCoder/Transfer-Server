@@ -71,7 +71,7 @@ Packet PacketCreator::sendResult(bool result) {
 	Packet packet;
 	packet.addHeader(HEADER_SEND_RESULT);
 	
-	// To not mess up direct connection
+	// To not mess up direct connection packet structure
 	packet.addInt(0);
 	
 	packet.addBool(result);

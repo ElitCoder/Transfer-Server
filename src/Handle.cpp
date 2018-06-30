@@ -105,6 +105,18 @@ void Handle::handleInform() {
 	}
 }
 
+static deque<string> getTokens(string input, char delimiter) {
+	istringstream stream(input);
+	deque<string> tokens;
+	string token;
+	
+	while (getline(stream, token, delimiter))
+		if (!token.empty())
+			tokens.push_back(token);
+	
+	return tokens;
+}
+
 void Handle::handleInformResult() {
 	auto accepted = packet_->getBool();
 	auto id = packet_->getInt();
@@ -119,13 +131,52 @@ void Handle::handleInformResult() {
 	auto ip_sender = Base::network().getIP(id);
 	auto ip_receiver = Base::network().getIP(id_);
 	
+	Log(DEBUG) << "Sender (" << ip_sender << "), receiver (" << ip_receiver << ")\n";
+	
 	bool same_external = false;
 	
 	// See if they have the same connecting IP, hence same NAT network
 	if (ip_sender == ip_receiver)
 		same_external = true;
 		
-	Base::network().sendID(id, PacketCreator::inform(accepted, same_external, receiving_port, addresses));
+	// See if both IPs could be LAN
+	auto lan_ips = Base::config().getAll<string>("lan_ips", {});
+	
+	bool send_lan = false;
+	bool recv_lan = false;
+	
+	for (auto& lan_ip : lan_ips) {
+		auto lan_tokens = getTokens(lan_ip, '.');
+		auto send_tokens = getTokens(ip_sender, '.');
+		auto recv_tokens = getTokens(ip_receiver, '.');
+		
+		bool send_lan_tmp = true;
+		bool recv_lan_tmp = true;
+		
+		for (size_t i = 0; i < lan_tokens.size(); i++) {
+			if (send_tokens.size() > i && lan_tokens.at(i) != send_tokens.at(i))
+				send_lan_tmp = false;
+				
+			if (recv_tokens.size() > i && lan_tokens.at(i) != recv_tokens.at(i))
+				send_lan_tmp = false;
+		}
+		
+		if (send_lan_tmp)
+			send_lan = true;
+			
+		if (recv_lan_tmp)
+			recv_lan = true;
+	}
+	
+	bool possibly_lan = same_external || (send_lan && recv_lan);
+	
+	Log(DEBUG) << "Direct connection is " << (possibly_lan ? "enabled" : "disabled") << endl;
+		
+	// If the receiving client does not have any addresses to bind to, disable direct connection
+	if (addresses.empty())
+		possibly_lan = false;
+		
+	Base::network().sendID(id, PacketCreator::inform(accepted, possibly_lan, receiving_port, addresses));
 }
 
 void Handle::handleSend() {

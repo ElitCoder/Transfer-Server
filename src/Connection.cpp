@@ -21,9 +21,7 @@ Connection::Connection(const int socket) {
         Log(WARNING) << "Could not set TCP_NODELAY\n";
     
     static size_t unique_id;
-    unique_id_ = unique_id++;
-    
-    Log(DEBUG) << "Creating ID " << unique_id_ << endl;
+    unique_id_ = unique_id++;    
 }
 
 bool Connection::operator==(const Connection &connection) {

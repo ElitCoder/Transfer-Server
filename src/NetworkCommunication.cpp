@@ -411,9 +411,7 @@ bool NetworkCommunication::runSelectReceive(fd_set &readSet, fd_set &errorSet, u
         return false;
     }
     
-    if(FD_ISSET(mPipe.at(thread_id).getSocket(), &readSet)) {
-        Log(DEBUG) << "Pipe was activated\n";
-        
+    if(FD_ISSET(mPipe.at(thread_id).getSocket(), &readSet)) {        
         mPipe.at(thread_id).resetPipe();
         return true;
     }
@@ -539,7 +537,6 @@ bool NetworkCommunication::runSelectAccept(fd_set &readSet, fd_set &errorSet) {
             mConnections.at(index).insert({ connection.getUniqueID(), connection });
             
             Log(INFORMATION) << "Connection #" << connection.getUniqueID() << " added from " << ip << "\n";
-            Log(DEBUG) << "Socket ID " << connection.getSocket() << endl;
         }
         
         mPipe.at(index).setPipe();
@@ -645,7 +642,7 @@ string NetworkCommunication::getIP(size_t unique_id) const {
         if (iterator == queue.end())
             continue;
             
-        iterator->second.getIP();
+        return iterator->second.getIP();
     }
     
     return "not found";
