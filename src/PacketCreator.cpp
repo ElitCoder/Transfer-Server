@@ -92,3 +92,12 @@ Packet PacketCreator::initialize(bool result, int code, const string& client, co
 	
 	return packet;
 }
+
+Packet PacketCreator::disconnect(int id) {
+	Packet packet;
+	packet.addHeader(HEADER_CLIENT_DISCONNECT);
+	packet.addInt(id);
+	packet.finalize();
+	
+	return packet;
+}

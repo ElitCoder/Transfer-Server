@@ -12,7 +12,8 @@ enum {
 	HEADER_SEND,
 	HEADER_SEND_RESULT,
 	HEADER_INITIALIZE,
-	HEADER_INFORM_RESULT
+	HEADER_INFORM_RESULT,
+	HEADER_CLIENT_DISCONNECT
 };
 
 class Packet;
@@ -26,6 +27,7 @@ public:
 	static Packet send(int id, const std::string& file, const std::string& directory, const std::pair<size_t, const unsigned char*>& bytes, bool result);
 	static Packet sendResult(bool result);
 	static Packet initialize(bool result, int code, const std::string& client, const std::string& update);
+	static Packet disconnect(int id);
 };
 
 #endif

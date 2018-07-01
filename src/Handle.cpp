@@ -26,11 +26,14 @@ void Handle::processDisconnects() {
 	lock_guard<mutex> lock(disconnect_mutex_);
 		
 	while (!disconnect_queue_.empty()) {
-		auto& id = disconnect_queue_.front();
+		auto id = disconnect_queue_.front();
 		connections_.erase(remove_if(connections_.begin(), connections_.end(), [&id] (auto& peer) { return peer.first == id; }), connections_.end());
 		disconnect_queue_.pop_front();
 		
 		Log(DEBUG) << "Removed " << id << endl;
+		
+		// Send disconnecting to client
+		Base::network().sendToAll(PacketCreator::disconnect(id));
 	}
 }
 
