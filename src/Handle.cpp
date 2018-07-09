@@ -227,10 +227,11 @@ void Handle::handleInitialize() {
 	if (version == required)
 		accepted = true;
 		
-	auto client_url = Base::config().get<string>("client_url", "");
-	auto update_url = Base::config().get<string>("update_url", "");
+	auto client_url_linux = Base::config().get<string>("client_url_linux", "");
+	auto update_url_linux = Base::config().get<string>("update_url_linux", "");
+	auto client_url_windows = Base::config().get<string>("client_url_windows", "");
 
-	Base::network().sendID(id_, PacketCreator::initialize(accepted, ERROR_OLD_PROTOCOL, client_url, update_url));
+	Base::network().sendID(id_, PacketCreator::initialize(accepted, ERROR_OLD_PROTOCOL, client_url_linux, update_url_linux, client_url_windows));
 }
 
 bool Handle::exists(const string& name) {
