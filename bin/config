@@ -1,5 +1,5 @@
 # Accepted protocol
-standard: a8
+standard: a7
 
 # Network settings
 port: 12000
