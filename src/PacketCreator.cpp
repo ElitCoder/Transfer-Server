@@ -27,13 +27,14 @@ Packet PacketCreator::available(const vector<pair<size_t, string>>& connections)
 	return packet;
 }
 
-Packet PacketCreator::inform(bool result, bool try_direct, int port, const vector<string>& receiving_addresses) {
+Packet PacketCreator::inform(bool result, bool try_direct, int port, const vector<string>& receiving_addresses, int id) {
 	Packet packet;
 	packet.addHeader(HEADER_INFORM);
 	packet.addBool(result);
 	packet.addBool(try_direct);
 	packet.addInt(receiving_addresses.size());
 	packet.addInt(port);
+	packet.addInt(id);
 	
 	for (auto& address : receiving_addresses)
 		packet.addString(address);

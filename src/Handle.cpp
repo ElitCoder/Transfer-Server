@@ -195,7 +195,7 @@ void Handle::handleInformResult() {
 		Log(DEBUG) << "Receiving client config disables direct connection\n";
 	}
 		
-	Base::network().sendID(id, PacketCreator::inform(accepted, possibly_lan, receiving_port, addresses));
+	Base::network().sendID(id, PacketCreator::inform(accepted, possibly_lan, receiving_port, addresses, id));
 }
 
 void Handle::handleSend() {
