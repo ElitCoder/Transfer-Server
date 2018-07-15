@@ -227,6 +227,9 @@ void Handle::handleInitialize() {
 	if (version == required)
 		accepted = true;
 		
+	if (version.length() != required.length())
+		accepted = false;
+
 	auto client_url_linux = Base::config().get<string>("client_url_linux", "");
 	auto update_url_linux = Base::config().get<string>("update_url_linux", "");
 	auto client_url_windows = Base::config().get<string>("client_url_windows", "");
