@@ -204,7 +204,13 @@ unsigned int NetworkCommunication::processBuffer(const unsigned char *buffer, co
             Log(ERROR) << "Trying to insert more data than available in buffer, adding = " << adding << ", received = " << received << endl;
         }
 
-        partialPacket.addData(buffer, adding);
+        try {
+            // In case we get bad allocation
+            partialPacket.addData(buffer, adding);
+        } catch (...) {
+            Log(ERROR) << "Ill-formed packet was received, avoiding bad allocation\n";
+            return -1;
+        }
 
         return adding;
     }

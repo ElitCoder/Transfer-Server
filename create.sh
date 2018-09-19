@@ -6,9 +6,9 @@ function build {
 	if [ $# -ne 0 ]; then
 		make clean
 	fi
-	
+
 	make -j $cores
-	
+
 	if [ $? -ne 0 ]; then
 		exit 1
 	fi
@@ -21,7 +21,7 @@ else
 		build clean
 	elif [ $1 = "run" ]; then
 		build
-		
+
 		cd bin/
 		./Transfer-Server
 		cd ../

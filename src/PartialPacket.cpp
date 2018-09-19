@@ -48,7 +48,12 @@ void PartialPacket::addData(const unsigned char *buffer, const unsigned int size
         m_packet->insert(m_packet->end(), buffer, buffer + size);
 
     if(m_size == 0 && m_header.size() >= 4) {
-        setFullSize();
+        try {
+            setFullSize();
+        } catch (...) {
+            // Continue throwing
+            throw InvalidPacketException();
+        }
     }
 }
 

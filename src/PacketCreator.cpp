@@ -8,7 +8,7 @@ Packet PacketCreator::join(bool result) {
 	packet.addHeader(HEADER_JOIN);
 	packet.addBool(result);
 	packet.finalize();
-	
+
 	return packet;
 }
 
@@ -16,14 +16,14 @@ Packet PacketCreator::available(const vector<pair<size_t, string>>& connections)
 	Packet packet;
 	packet.addHeader(HEADER_AVAILABLE);
 	packet.addInt(connections.size());
-	
+
 	for (auto& peer : connections) {
 		packet.addInt(peer.first);
 		packet.addString(peer.second);
 	}
-	
+
 	packet.finalize();
-	
+
 	return packet;
 }
 
@@ -35,12 +35,12 @@ Packet PacketCreator::inform(bool result, bool try_direct, int port, const vecto
 	packet.addInt(receiving_addresses.size());
 	packet.addInt(port);
 	packet.addInt(id);
-	
+
 	for (auto& address : receiving_addresses)
 		packet.addString(address);
 
 	packet.finalize();
-	
+
 	return packet;
 }
 
@@ -52,7 +52,7 @@ Packet PacketCreator::informResult(int id, const string& file, const string& dir
 	packet.addString(directory);
 	packet.addBool(direct_possible);
 	packet.finalize();
-	
+
 	return packet;
 }
 
@@ -65,20 +65,20 @@ Packet PacketCreator::send(int id, const string& file, const string& directory, 
 	packet.addBytes(bytes);
 	packet.addBool(result);
 	packet.finalize();
-	
+
 	return packet;
 }
 
 Packet PacketCreator::sendResult(bool result) {
 	Packet packet;
 	packet.addHeader(HEADER_SEND_RESULT);
-	
+
 	// To not mess up direct connection packet structure
 	packet.addInt(0);
-	
+
 	packet.addBool(result);
 	packet.finalize();
-	
+
 	return packet;
 }
 
@@ -91,7 +91,7 @@ Packet PacketCreator::initialize(bool result, int code, const string& client_lin
 	packet.addString(update_linux);
 	packet.addString(client_windows);
 	packet.finalize();
-	
+
 	return packet;
 }
 
@@ -100,6 +100,6 @@ Packet PacketCreator::disconnect(int id) {
 	packet.addHeader(HEADER_CLIENT_DISCONNECT);
 	packet.addInt(id);
 	packet.finalize();
-	
+
 	return packet;
 }

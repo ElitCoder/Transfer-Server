@@ -20,7 +20,7 @@ class Log : public std::ostringstream {
 public:
 	Log();
 	Log(int level);
-	
+
 	~Log();
 
 private:

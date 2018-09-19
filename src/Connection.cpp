@@ -11,17 +11,17 @@ using namespace std;
 Connection::Connection(const int socket) {
     socket_ = socket;
     waiting_processing_mutex_ = make_shared<mutex>();
-    
+
     if (fcntl(socket_, F_SETFL, O_NONBLOCK) == -1)
         Log(WARNING) << "Could not make non-blocking sockets\n";
-    
+
     int on = 1;
-    
+
     if (setsockopt(socket_, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<char*>(&on), sizeof(on)) < 0)
         Log(WARNING) << "Could not set TCP_NODELAY\n";
-    
+
     static size_t unique_id;
-    unique_id_ = unique_id++;    
+    unique_id_ = unique_id++;
 }
 
 bool Connection::operator==(const Connection &connection) {
@@ -44,7 +44,7 @@ PartialPacket& Connection::getPartialPacket() {
     if(in_queue_.empty() || in_queue_.back().isFinished()) {
         addPartialPacket(PartialPacket());
     }
-    
+
     return in_queue_.back();
 }
 
@@ -60,17 +60,17 @@ PartialPacket& Connection::getIncomingPacket() {
     if(in_queue_.empty()) {
         Log(ERROR) << "Trying to get an incoming packet while the inQueue is empty\n";
     }
-    
+
     return in_queue_.front();
 }
 
 void Connection::processedPacket() {
     if(in_queue_.empty()) {
         Log(ERROR) << "Trying to pop_front when the inQueue is empty\n";
-        
+
         return;
     }
-    
+
     in_queue_.pop_front();
     increasePacketsWaiting();
 }
@@ -82,20 +82,20 @@ bool Connection::isVerified() const {
 
 size_t Connection::packetsWaiting() {
     lock_guard<mutex> lock(*waiting_processing_mutex_);
-    
+
     return waiting_processing_;
 }
 
 void Connection::reducePacketsWaiting() {
     lock_guard<mutex> lock(*waiting_processing_mutex_);
-    
+
     if (waiting_processing_ > 0)
         waiting_processing_--;
 }
 
 void Connection::increasePacketsWaiting() {
     lock_guard<mutex> lock(*waiting_processing_mutex_);
-    
+
     waiting_processing_++;
 }
 

@@ -11,7 +11,7 @@ public:
 	static Config& config();
 	static NetworkCommunication& network();
 	static Handle& handle();
-	
+
 private:
 	static Config config_;
 	static NetworkCommunication network_;

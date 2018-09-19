@@ -12,26 +12,26 @@ using namespace std;
 
 void disconnectFunction(int fd, size_t id) {
 	if (fd) {}
-	
-	Base::handle().disconnect(id);	
+
+	Base::handle().disconnect(id);
 }
 
 void Handle::disconnect(size_t id) {
 	lock_guard<mutex> lock(disconnect_mutex_);
-	
+
 	disconnect_queue_.push_back(id);
 }
 
 void Handle::processDisconnects() {
 	lock_guard<mutex> lock(disconnect_mutex_);
-		
+
 	while (!disconnect_queue_.empty()) {
 		auto id = disconnect_queue_.front();
 		connections_.erase(remove_if(connections_.begin(), connections_.end(), [&id] (auto& peer) { return peer.first == id; }), connections_.end());
 		disconnect_queue_.pop_front();
-		
+
 		Log(DEBUG) << "Removed " << id << endl;
-		
+
 		// Send disconnecting to client
 		Base::network().sendToAll(PacketCreator::disconnect(id));
 	}
@@ -43,28 +43,28 @@ void Handle::process(int fd, size_t connection_id, Packet& packet) {
 	fd_ = fd;
 	id_ = connection_id;
 	packet_ = &packet;
-	
+
 	auto header = packet.getByte();
-	
+
 	switch (header) {
 		case HEADER_JOIN: handleJoin();
 			break;
-			
+
 		case HEADER_AVAILABLE: handleAvailable();
 			break;
-			
+
 		case HEADER_INFORM: handleInform();
 			break;
-			
+
 		case HEADER_SEND: handleSend();
 			break;
-			
+
 		case HEADER_SEND_RESULT: handleSendResult();
 			break;
-			
+
 		case HEADER_INITIALIZE: handleInitialize();
 			break;
-			
+
 		case HEADER_INFORM_RESULT: handleInformResult();
 			break;
 
@@ -78,19 +78,19 @@ void Handle::process(int fd, size_t connection_id, Packet& packet) {
 
 void Handle::handleJoin() {
 	auto name = packet_->getString();
-	
+
 	// Add name to connections_ if it's unique
 	bool unique = !exists(name);
-	
+
 	if (unique)
 		connections_.push_back({ id_, name });
-	
+
 	Base::network().sendFD(fd_, PacketCreator::join(unique));
 }
 
 void Handle::handleAvailable() {
 	auto packet = PacketCreator::available(connections_);
-	
+
 	Base::network().sendFD(fd_, packet);
 }
 
@@ -98,56 +98,56 @@ static deque<string> getTokens(string input, char delimiter) {
 	istringstream stream(input);
 	deque<string> tokens;
 	string token;
-	
+
 	while (getline(stream, token, delimiter))
 		if (!token.empty())
 			tokens.push_back(token);
-	
+
 	return tokens;
 }
 
 static bool isIPMatch(const string& ip_sender, const string& ip_receiver) {
 	Log(DEBUG) << "Sender (" << ip_sender << "), receiver (" << ip_receiver << ")\n";
-	
+
 	bool same_external = false;
-	
+
 	// See if they have the same connecting IP, hence same NAT network
 	if (ip_sender == ip_receiver)
 		same_external = true;
-		
+
 	// See if both IPs could be LAN
 	auto lan_ips = Base::config().getAll<string>("lan_ips", {});
-	
+
 	bool send_lan = false;
 	bool recv_lan = false;
-	
+
 	for (auto& lan_ip : lan_ips) {
 		auto lan_tokens = getTokens(lan_ip, '.');
 		auto send_tokens = getTokens(ip_sender, '.');
 		auto recv_tokens = getTokens(ip_receiver, '.');
-		
+
 		bool send_lan_tmp = true;
 		bool recv_lan_tmp = true;
-		
-		for (size_t i = 0; i < lan_tokens.size(); i++) {	
+
+		for (size_t i = 0; i < lan_tokens.size(); i++) {
 			if (send_tokens.size() > i && lan_tokens.at(i) != send_tokens.at(i))
 				send_lan_tmp = false;
-				
+
 			if (recv_tokens.size() > i && lan_tokens.at(i) != recv_tokens.at(i))
 				recv_lan_tmp = false;
 		}
-		
+
 		if (send_lan_tmp)
 			send_lan = true;
-			
+
 		if (recv_lan_tmp)
 			recv_lan = true;
 	}
-	
+
 	bool possibly_lan = same_external || (send_lan && recv_lan);
-	
+
 	Log(DEBUG) << "Direct connection is " << (possibly_lan ? "enabled" : "disabled") << endl;
-	
+
 	return possibly_lan;
 }
 
@@ -156,14 +156,14 @@ void Handle::handleInform() {
 	auto file = packet_->getString();
 	auto directory = packet_->getString();
 	auto direct_connection = packet_->getBool();
-	
+
 	if (exists(to)) {
 		auto ip_sender = Base::network().getIP(id_);
 		auto ip_receiver = Base::network().getIP(getID(to));
-		
+
 		auto direct_connection_possible = isIPMatch(ip_sender, ip_receiver);
 		auto should_direct = direct_connection_possible && direct_connection;
-		
+
 		// Ask receiving client for local IP to determine if local direct connection is possible
 		Base::network().sendID(getID(to), PacketCreator::informResult(id_, file, directory, should_direct));
 	} else {
@@ -177,24 +177,24 @@ void Handle::handleInformResult() {
 	auto id = packet_->getInt();
 	auto num_addresses = packet_->getInt();
 	auto receiving_port = packet_->getInt();
-	
+
 	vector<string> addresses;
-	
+
 	for (int i = 0; i < num_addresses; i++)
 		addresses.push_back(packet_->getString());
-		
+
 	auto ip_sender = Base::network().getIP(id);
 	auto ip_receiver = Base::network().getIP(id_);
-	
+
 	auto possibly_lan = isIPMatch(ip_sender, ip_receiver);
-		
+
 	// If the receiving client does not have any addresses to bind to, disable direct connection
 	if (addresses.empty()) {
 		possibly_lan = false;
-		
+
 		Log(DEBUG) << "Receiving client config disables direct connection\n";
 	}
-		
+
 	Base::network().sendID(id, PacketCreator::inform(accepted, possibly_lan, receiving_port, addresses, id));
 }
 
@@ -204,29 +204,29 @@ void Handle::handleSend() {
 	auto directory = packet_->getString();
 	auto bytes = packet_->getBytes();
 	auto first = packet_->getBool();
-	
+
 	// Find out where to send the bytes
 	auto id = getID(to);
-	
+
 	Base::network().sendID(id, PacketCreator::send(id_, file, directory, bytes, first), false);
 }
 
 void Handle::handleSendResult() {
 	auto id = packet_->getInt();
 	auto result = packet_->getBool();
-		
+
 	Base::network().sendID(id, PacketCreator::sendResult(result));
 }
 
 void Handle::handleInitialize() {
 	auto version = packet_->getString();
-	
+
 	auto required = Base::config().get<string>("standard", "");
 	auto accepted = !lexicographical_compare(version.begin(), version.end(), required.begin(), required.end());
-	
+
 	if (version == required)
 		accepted = true;
-		
+
 	if (version.length() != required.length())
 		accepted = false;
 
@@ -239,7 +239,7 @@ void Handle::handleInitialize() {
 
 bool Handle::exists(const string& name) {
 	auto iterator = find_if(connections_.begin(), connections_.end(), [&name] (auto& peer) { return peer.second == name; });
-	
+
 	return iterator != connections_.end();
 }
 
