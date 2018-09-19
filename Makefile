@@ -1,8 +1,8 @@
 CPP_FILES	:= $(wildcard src/*.cpp)
 OBJ_FILES	:= $(addprefix obj/,$(notdir $(CPP_FILES:.cpp=.o)))
 CC_FLAGS	:= -std=c++14 -Wall -Wextra -pedantic-errors
-CC_FLAGS	+= -O3
-#CC_FLAGS	+= -g
+#CC_FLAGS	+= -O3
+CC_FLAGS	+= -g
 LD_LIBS		:= -lpthread
 
 EXECUTABLE	:= bin/Transfer-Server
@@ -12,7 +12,7 @@ $(EXECUTABLE): $(OBJ_FILES)
 
 obj/%.o: src/%.cpp
 	g++ $(CC_FLAGS) -c -o $@ $<
-	
+
 clean:
 	rm -f obj/* $(EXECUTABLE)
 
